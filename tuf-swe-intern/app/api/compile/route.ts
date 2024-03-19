@@ -1,29 +1,39 @@
-import { connection } from '../../utils/db';
 import mysql from 'mysql2/promise';
+import { NextResponse } from "next/server";
 
-export const POST = async (request, response) => {
-    const { username, codeLang, input, srcCode } = request.body;
-    const db = await mysql.createConnection({
-      host: process.env.MYSQL_HOST,
-      port: process.env.MYSQL_PORT ? parseInt(process.env.MYSQL_PORT) : undefined,
-      database: process.env.MYSQL_DATABASE,
-      user: process.env.MYSQL_USER,
-      password: process.env.MYSQL_PASSWORD
-      });
+export const POST = async (req) => {
+    let db;
     try {
-        const [result] = await db.query(
-            'INSERT INTO user (username, code_lang, stdin, src_code) VALUES (?, ?, ?, ?)',
-            [username, codeLang, input, srcCode]
-        );
-        console.log('Inserted ID:', result);
-        response.status(200).json({ message: 'Form submitted successfully' });
-        return response;
+      //console.log(req.body.username);
+      const { username, preferred_language, standard_input, source_code } = await req.json();
+      console.log(username + " " + preferred_language + " " + standard_input + " " + source_code);
+      // Check if username is present
+      if (!username) {
+        return NextResponse.json({ error: 'Username is required' });
+      }
+
+        db = await mysql.createConnection({
+        host: 'Manans-MacBook-Air.local',
+        port: 3306,
+        database: 'coding_platform',
+        user: 'root',
+        password: 'qwerty1234A!'
+      });
+
+      const [result] = await db.query(
+        'INSERT INTO users (username, preferred_language, standard_input, source_code) VALUES (?, ?, ?, ?)',
+        [username, preferred_language, standard_input, source_code]
+      );
+
+      console.log('Inserted ID:', result);
+      return NextResponse.json({ error: 'Data inserted successfully' });
     } catch (error) {
-        // Handle error
-        console.error(error);
-        response.status(500).json({ message: 'Internal server error' });
-        return response;
-    }finally{
-      await db.end();
+      console.error(error);
+      return NextResponse.json({ error: 'Internal server error' });;
+      //.status(500).json({ error: 'Internal server error' });
+    } finally {
+      if(db){
+        await db.end(); // Ensure to close the database connection
+      }
     }
 };
